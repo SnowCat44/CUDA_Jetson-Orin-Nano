@@ -11,14 +11,14 @@
 /*************************************************
 * Name:        PQCLEAN_MLDSA87_CLEAN_crypto_sign_keypair
 *
-* Description: Generates public and private key.
+* Description: 공개키와 개인키를 생성한다.
 *
-* Arguments:   - uint8_t *pk: pointer to output public key (allocated
-*                             array of PQCLEAN_MLDSA87_CLEAN_CRYPTO_PUBLICKEYBYTES bytes)
-*              - uint8_t *sk: pointer to output private key (allocated
-*                             array of PQCLEAN_MLDSA87_CLEAN_CRYPTO_SECRETKEYBYTES bytes)
+* Arguments:   - uint8_t *pk: 출력 공개키를 저장할 포인터
+*                             (할당된 PQCLEAN_MLDSA87_CLEAN_CRYPTO_PUBLICKEYBYTES 크기의 배열)
+*              - uint8_t *sk: 출력 개인키를 저장할 포인터
+*                             (할당된 PQCLEAN_MLDSA87_CLEAN_CRYPTO_SECRETKEYBYTES 크기의 배열)
 *
-* Returns 0 (success)
+* Returns 0 (성공)
 **************************************************/
 int PQCLEAN_MLDSA87_CLEAN_crypto_sign_keypair(uint8_t *pk, uint8_t *sk) {
     uint8_t seedbuf[2 * SEEDBYTES + CRHBYTES];
@@ -69,17 +69,17 @@ int PQCLEAN_MLDSA87_CLEAN_crypto_sign_keypair(uint8_t *pk, uint8_t *sk) {
 /*************************************************
 * Name:        crypto_sign_signature
 *
-* Description: Computes signature.
+* Description: 서명을 계산한다.
 *
-* Arguments:   - uint8_t *sig:   pointer to output signature (of length PQCLEAN_MLDSA87_CLEAN_CRYPTO_BYTES)
-*              - size_t *siglen: pointer to output length of signature
-*              - uint8_t *m:     pointer to message to be signed
-*              - size_t mlen:    length of message
-*              - uint8_t *ctx:   pointer to context string
-*              - size_t ctxlen:  length of context string
-*              - uint8_t *sk:    pointer to bit-packed secret key
+* Arguments:   - uint8_t *sig:   출력 서명을 저장할 포인터 (길이는 PQCLEAN_MLDSA87_CLEAN_CRYPTO_BYTES)
+*              - size_t *siglen: 출력 서명의 길이를 저장할 포인터
+*              - uint8_t *m:     서명할 메시지를 가리키는 포인터
+*              - size_t mlen:    메시지의 길이
+*              - uint8_t *ctx:   컨텍스트 문자열을 가리키는 포인터
+*              - size_t ctxlen:  컨텍스트 문자열의 길이
+*              - uint8_t *sk:    비트 압축된 개인키를 가리키는 포인터
 *
-* Returns 0 (success) or -1 (context string too long)
+* Returns 0 (성공) or -1 (컨텍스트 문자열이 너무 김)
 **************************************************/
 int PQCLEAN_MLDSA87_CLEAN_crypto_sign_signature_ctx(uint8_t *sig,
         size_t *siglen,
@@ -197,20 +197,19 @@ rej:
 /*************************************************
 * Name:        crypto_sign
 *
-* Description: Compute signed message.
+* Description: 서명된 메시지를 계산한다.
 *
-* Arguments:   - uint8_t *sm: pointer to output signed message (allocated
-*                             array with PQCLEAN_MLDSA87_CLEAN_CRYPTO_BYTES + mlen bytes),
-*                             can be equal to m
-*              - size_t *smlen: pointer to output length of signed
-*                               message
-*              - const uint8_t *m: pointer to message to be signed
-*              - size_t mlen: length of message
-*              - const uint8_t *ctx: pointer to context string
-*              - size_t ctxlen: length of context string
-*              - const uint8_t *sk: pointer to bit-packed secret key
+* Arguments:   - uint8_t *sm: 출력 서명된 메시지를 저장할 포인터 (할당된
+*                             PQCLEAN_MLDSA87_CLEAN_CRYPTO_BYTES + mlen 크기의 배열),
+*                             m과 동일한 주소여도 됨
+*              - size_t *smlen: 출력 서명된 메시지의 길이를 저장할 포인터
+*              - const uint8_t *m: 서명할 메시지를 가리키는 포인터
+*              - size_t mlen: 메시지의 길이
+*              - const uint8_t *ctx: 컨텍스트 문자열을 가리키는 포인터
+*              - size_t ctxlen: 컨텍스트 문자열의 길이
+*              - const uint8_t *sk: 비트 압축된 개인키를 가리키는 포인터
 *
-* Returns 0 (success) or -1 (context string too long)
+* Returns 0 (성공) or -1 (컨텍스트 문자열이 너무 김)
 **************************************************/
 int PQCLEAN_MLDSA87_CLEAN_crypto_sign_ctx(uint8_t *sm,
         size_t *smlen,
@@ -233,17 +232,17 @@ int PQCLEAN_MLDSA87_CLEAN_crypto_sign_ctx(uint8_t *sm,
 /*************************************************
 * Name:        crypto_sign_verify
 *
-* Description: Verifies signature.
+* Description: 서명을 검증한다.
 *
-* Arguments:   - uint8_t *m: pointer to input signature
-*              - size_t siglen: length of signature
-*              - const uint8_t *m: pointer to message
-*              - size_t mlen: length of message
-*              - const uint8_t *ctx: pointer to context string
-*              - size_t ctxlen: length of context string
-*              - const uint8_t *pk: pointer to bit-packed public key
+* Arguments:   - uint8_t *m: 입력 서명을 가리키는 포인터
+*              - size_t siglen: 서명의 길이
+*              - const uint8_t *m: 메시지를 가리키는 포인터
+*              - size_t mlen: 메시지의 길이
+*              - const uint8_t *ctx: 컨텍스트 문자열을 가리키는 포인터
+*              - size_t ctxlen: 컨텍스트 문자열의 길이
+*              - const uint8_t *pk: 비트 압축된 공개키를 가리키는 포인터
 *
-* Returns 0 if signature could be verified correctly and -1 otherwise
+* Returns 서명이 올바르게 검증되면 0, 그렇지 않으면 -1
 **************************************************/
 int PQCLEAN_MLDSA87_CLEAN_crypto_sign_verify_ctx(const uint8_t *sig,
         size_t siglen,
@@ -328,18 +327,18 @@ int PQCLEAN_MLDSA87_CLEAN_crypto_sign_verify_ctx(const uint8_t *sig,
 /*************************************************
 * Name:        crypto_sign_open
 *
-* Description: Verify signed message.
+* Description: 서명된 메시지를 검증한다.
 *
-* Arguments:   - uint8_t *m: pointer to output message (allocated
-*                            array with smlen bytes), can be equal to sm
-*              - size_t *mlen: pointer to output length of message
-*              - const uint8_t *sm: pointer to signed message
-*              - size_t smlen: length of signed message
-*              - const uint8_t *ctx: pointer to context tring
-*              - size_t ctxlen: length of context string
-*              - const uint8_t *pk: pointer to bit-packed public key
+* Arguments:   - uint8_t *m: 출력 메시지를 저장할 포인터 (할당된
+*                            smlen 크기의 배열), sm과 동일한 주소여도 됨
+*              - size_t *mlen: 출력 메시지의 길이를 저장할 포인터
+*              - const uint8_t *sm: 서명된 메시지를 가리키는 포인터
+*              - size_t smlen: 서명된 메시지의 길이
+*              - const uint8_t *ctx: 컨텍스트 문자열을 가리키는 포인터
+*              - size_t ctxlen: 컨텍스트 문자열의 길이
+*              - const uint8_t *pk: 비트 압축된 공개키를 가리키는 포인터
 *
-* Returns 0 if signed message could be verified correctly and -1 otherwise
+* Returns 서명된 메시지가 올바르게 검증되면 0, 그렇지 않으면 -1
 **************************************************/
 int PQCLEAN_MLDSA87_CLEAN_crypto_sign_open_ctx(uint8_t *m,
         size_t *mlen,
