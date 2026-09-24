@@ -1,226 +1,93 @@
-# PQClean
+# ML-DSA-87 KeyGen — CUDA 베이스라인
 
-> [!WARNING]
-> **Retirement Notice:** PQClean is retired and archived as read-only. See [issue #604](https://github.com/PQClean/PQClean/issues/604) for background.
-> For maintained implementations of standardized PQC, consider the [PQ Code Package](https://github.com/pq-code-package) organization, including these alternatives (list reflects the landscape at archival time and may go stale):
->
-> * **ML-KEM (Kyber)**: [mlkem-native](https://github.com/pq-code-package/mlkem-native)
-> * **ML-DSA (Dilithium)**: [mldsa-native](https://github.com/pq-code-package/mldsa-native)
-> * **SLH-DSA (SPHINCS+)**: [slhdsa-c](https://github.com/pq-code-package/slhdsa-c)
-> * **Broad algorithm coverage / library integration**: [liboqs](https://github.com/open-quantum-safe/liboqs)
->
-> For implementations of the following algorithms not covered by the above, refer to:
-> * **Falcon/FN-DSA**: [Thomas Pornin's implementations](https://github.com/pornin?tab=repositories&q=fn-dsa&type=&language=&sort=)
-> * **HQC**: https://gitlab.com/pqc-hqc/hqc/
-> * **Classic McEliece**: [libmceliece](https://lib.mceliece.org)
+PQClean `ml-dsa-87/clean` 의 **KeyGen** 을 GPU에서 도는 **단일 스레드 CUDA 베이스라인**으로 옮긴 것입니다.
+목적은 성능이 아니라 **"GPU에서 CPU와 바이트 단위로 동일한 pk/sk가 나온다"** 를 확인하는 발판입니다.
 
+> ⚠️ **이 코드는 GPU가 없는 환경에서 생성되었으며, 컴파일·실행 검증이 되지 않았습니다.**
+> `cuda/` 쪽은 nvcc/실제 GPU에서 처음 빌드할 때 C→C++ 관련 수정이 몇 군데 필요할 수 있습니다.
+> 반면 `ref/`(CPU 참조)는 생성 환경에서 빌드·실행을 확인했습니다.
 
-_[See the build status for each component here](.github/workflows/BADGES.md)_
+---
 
-**PQClean**, in short, is an effort to collect **clean** implementations of the post-quantum
-schemes that are in the
-[NIST post-quantum project](https://csrc.nist.gov/projects/post-quantum-cryptography).
-The goal of PQClean is to provide *standalone implementations* that
-
-* can easily be integrated into libraries such as [liboqs](https://openquantumsafe.org/#liboqs).
-* can efficiently upstream into higher-level protocol integration efforts such as [Open Quantum Safe](https://openquantumsafe.org/#integrations);
-* can easily be integrated into benchmarking frameworks such as [SUPERCOP](https://bench.cr.yp.to/supercop.html);
-* can easily be integrated into frameworks targeting embedded platforms such as [pqm4](https://github.com/mupq/pqm4);
-* are suitable starting points for architecture-specific optimized implementations;
-* are suitable starting points for evaluation of implementation security; and
-* are suitable targets for formal verification.
-
-What PQClean is **not** aiming for is
-
-* a build system producing an integrated library of all schemes;
-* including benchmarking of implementations; and
-* including integration into higher-level applications or protocols.
-
-As a first main target, we are collecting C implementations that fulfill the requirements
-listed below. We also accept optimised implementations, but still requiring high-quality, tested code.
-
-Please also review our [guidelines for contributors](CONTRIBUTING.md) if you are interested in adding a scheme to PQClean.
-
-## PQClean paper
-
-For a summary of the lessons learnt while working on PQClean, please refer to:
-
-> Matthias J. Kannwischer, Peter Schwabe, Douglas Stebila, and Thom Wiggers. “Improving Software Quality in Cryptography Standardization Projects.” In: Security Standardization Research – EuroS&P Workshops 2022. 2022.
-
-Find the paper at https://eprint.iacr.org/2022/337
-
-Please cite this work when referring to PQClean:
-
-```bibtex
-@inproceedings{SSR:KSSW22,
-  author    = {Matthias J. Kannwischer and
-               Peter Schwabe and
-               Douglas Stebila and
-               Thom Wiggers},
-  title     = {Improving Software Quality in Cryptography Standardization Projects},
-  booktitle = {{IEEE} European Symposium on Security and Privacy, EuroS{\&}P 2022 - Workshops, Genoa, Italy, June 6-10, 2022},
-  pages     = {19--30},
-  publisher = {IEEE Computer Society},
-  address   = {Los Alamitos, CA, USA},
-  year      = {2022},
-  url       = {https://eprint.iacr.org/2022/337},
-  doi       = {10.1109/EuroSPW55150.2022.00010},
-}
-```
-
-**Please note** that many of the implementations included in PQClean originate from original research projects themselves, and their authors will appreciate getting cited as well.
-
-## Requirements on C implementations that are automatically checked
-
-_The checking of items on this list is still being developed. Checked items should be working._
-
-* [x] Code is valid C99
-* [x] Passes functional tests
-* [x] API functions do not write outside provided buffers
-* [x] `api.h` cannot include external files
-* [x] Compiles with `-Wall -Wextra -Wpedantic -Werror -Wmissing-prototypes` with `gcc` and `clang`
-* [x] `#if`/`#ifdef`s only for header encapsulation
-* [x] Consistent test vectors across runs
-* [x] Consistent test vectors on big-endian and little-endian machines
-* [x] Consistent test vectors on 32-bit and 64-bit machines
-* [x] `const` arguments are labeled as `const`
-* [x] No errors/warnings reported by valgrind
-* [x] No errors/warnings reported by address sanitizer
-* [x] Only dependencies: `fips202.c`, `sha2.c`, `aes.c`, `randombytes.c`
-* [x] API functions return `0` on success
-* [x] No dynamic memory allocations (including variable-length arrays)
-* [ ] No branching on secret data (dynamically checked using valgrind)
-* [ ] No access to secret memory locations (dynamically checked using valgrind)
-* [x] Separate subdirectories (without symlinks) for each parameter set of each scheme
-* [x] Builds under Linux, MacOS, and Windows
-    * [x] Linux
-    * [x] MacOS
-    * [x] Windows
-* [x] Makefile-based build for each separate scheme
-* [x] Makefile-based build for Windows (`nmake`)
-* [x] All exported symbols are namespaced with `PQCLEAN_SCHEMENAME_`
-* [x] Each implementation comes with a `LICENSE` file (see below)
-* [x] Each scheme comes with a `META.yml` file giving details about version of the algorithm, designers
-    * [x] Each individual implementation is specified in `META.yml`.
-
-
-## Requirements on C implementations that are manually checked
-
-* Minimalist Makefiles
-* No stringification macros
-* Output-parameter pointers in functions are on the left
-* All exported symbols are namespaced in place
-* Integer types are of fixed size where relevant, using `stdint.h` types (optional, recommended)
-* Integers used for indexing memory are of size `size_t` (optional, recommended)
-* Variable declarations at the beginning (except in `for (size_t i=...`) (optional, recommended)
-
-## Schemes currently in PQClean
-
-For the following schemes we have implementations of one or more of their parameter sets.
-For all of these schemes we have clean C code, but for some we also have optimised code.
-
-### Key Encapsulation Mechanisms
-
-**Finalists:**
-* Kyber
-
-**Alternate candidates:**
-* HQC
-* Classic McEliece
-
-### Signature schemes
-
-**To-be standards:**
-* Dilithium
-* Falcon
-* SPHINCS+
-
-**Alternate candidates:**
-* No participants yet.
-
-Implementations previously available in PQClean and dropped in Round 3 of the NIST standardization effort are available in the [`round2` tag](https://github.com/PQClean/PQClean/releases/tag/round2). 
-
-Implementations previously available in PQClean and dropped in Round 4 of the NIST standardization effort are available in the [`round3` tag](https://github.com/PQClean/PQClean/releases/tag/round3). 
-
-## API used by PQClean
-
-PQClean is essentially using the same API as required for the NIST reference implementations,
-which is also used by SUPERCOP and by libpqcrypto. The only differences to that API are
-the following:
-* All functions are namespaced;
-* All lengths are passed as type `size_t` instead of `unsigned long long`; and
-* Signatures offer two additional functions that follow the "traditional" approach used
-in most software stacks of computing and verifying signatures instead of producing and
-recovering signed messages. Specifically, those functions have the following name and signature:
-
-```c
-int PQCLEAN_SCHEME_IMPL_crypto_sign_signature(
-    uint8_t *sig, size_t *siglen,
-    const uint8_t *m, size_t mlen,
-    const uint8_t *sk);
-int PQCLEAN_SCHEME_IMPL_crypto_sign_verify(
-    const uint8_t *sig, size_t siglen,
-    const uint8_t *m, size_t mlen,
-    const uint8_t *pk);
-```
-
-## Building PQClean
-
-As noted above, PQClean is **not** meant to be built as a single library: it is a collection of source code that can be easily integrated into other libraries.  The PQClean repository includes various test programs which do build various files, but you should not use the resulting binaries.
-
-List of required dependencies: ``gcc or clang, make, python3, python-yaml library, valgrind, astyle (>= 3.0)``.
-
-## Using source code from PQClean in your own project
-
-Each implementation directory in PQClean (e.g., crypto\_kem/kyber768\_clean) can be extracted for use in your own project.  You will need to:
-
-1. Copy the source code from the implementation's directory into your project.
-2. Add the files to your project's build system.
-3. Provide instantiations of any of the common cryptographic algorithms used by the implementation.  This likely includes `common/randombytes.h` (a cryptographic random number generator), and possibly `common/sha2.h` (the SHA-2 hash function family), `common/aes.h` (AES implementations), `common/fips202.h` (the SHA-3 hash function family) and `common/sp800-185.h` (the cSHAKE family).
-   It is possible to use the implementations from the `common/` folder, but note that they may not be the most performant implementations and may do unnecessary things (like heap allocations) for our testing purposes.
-
-Regarding #2, adding the files to your project's build system, each implementation in PQClean is accompanied by example two makefiles that show how one could build the files for that implementation:
-
-- The file `Makefile` which can be used with GNU Make, BSD Make, and possibly others.
-- The file `Makefile.Microsoft_nmake` which can be used with Visual Studio's nmake.
-
-## Projects integrating PQClean-distributed source code
-
-The following projects consume implementations from PQClean and provide their own wrappers around the implementations.
-Their integration strategies may serve as examples for your own projects.
-
-- **[QuantCrypt](https://github.com/aabmets/quantcrypt)**: Cross-platform Python library for Post-Quantum Cryptography using precompiled PQClean binaries
-- **[pqcrypto crate](https://github.com/rustpq/pqcrypto)**: Rust integration that automatically generates wrappers from PQClean source code.
-- **[mupq](https://github.com/mupq/)**: Runs the implementations from PQClean as reference implementations to compare with microcontroller-optimized code.
-- **[node-pqclean](https://github.com/tniessen/node-pqclean)**: JavaScript interface for PQClean that natively supports Node.js, as well as Deno and web platforms through WebAssembly.
-- **[Open Quantum Safe](https://github.com/open-quantum-safe/)**: The Open Quantum Safe project integrates implementations from PQClean into their [liboqs](https://github.com/open-quantum-safe/liboqs/) C library, which then exposes them via [C++](https://github.com/open-quantum-safe/liboqs-cpp), [C# / .NET](https://github.com/open-quantum-safe/liboqs-dotnet), and [Python](https://github.com/open-quantum-safe/liboqs-python) wrappers, as well as to forks of [OpenSSL](https://github.com/open-quantum-safe/openssl) and [OpenSSH](https://github.com/open-quantum-safe/openssh-portable).
-
-## License
-
-Each subdirectory containing implementations contains a `LICENSE` file stating under what license that specific implementation is released.
-The files in `common` contain licensing information at the top of the file (and are currently either public domain or MIT).
-All other code in this repository is released under the conditions of [CC0](http://creativecommons.org/publicdomain/zero/1.0/).
-
-## Running tests locally
-
-See https://github.com/PQClean/PQClean/wiki/Test-framework for details about the PQClean test framework.
-
-While we run extensive automatic testing on Github Actions ((emulated) Linux builds, MacOS and Windows builds) and [Travis CI][travis-pqc] (Aarch64 builds), and most tests can also be run locally.
-To do this, make sure the following is installed:
-
-* Python 3.6+
-* `pytest` for python 3.
-
-We also recommend installing ``pytest-xdist`` to allow running tests in parallel.
-
-You will also need to make sure the submodules are initialized by running:
+## 구성
 
 ```
-git submodule update --init
+mldsa87-keygen-cuda/
+├── cuda/      GPU 포트 (nvcc 로 빌드)         ← 검증 대상
+├── ref/       CPU 참조 (원본 clean, 무수정)   ← 비교 기준(오라클)
+├── EXPECTED.txt  ref 실행 결과(기대 pk/sk)     ← 빠른 눈대중 확인용
+└── README.md
 ```
 
-Run the Python-based tests by going into the `test` directory and running `pytest -v` or (recommended) `pytest -n=auto` for parallel testing.
+## 변환 원칙: "본문 보존, 필요한 것만 변경"
 
-You may also run `python3 <testmodule>` where `<testmodule>` is any of the files starting with `test_` in the `test/` folder.
+`cuda/` 의 알고리즘 본문(암호 계산 로직)은 **원본과 한 글자도 다르지 않습니다.** GPU에 꼭 필요한 것만 기계적으로 바꿨습니다:
 
-[travis-pqc]: https://travis-ci.com/PQClean/PQClean/
+1. **함수 한정자**: 모든 알고리즘 함수에 `__device__` 부여 (총 122개).
+2. **상수 테이블 → `__constant__`**: `zetas[256]`(ntt.cu), `KeccakF_RoundConstants[24]`(fips202.cu). 값·순서 불변.
+3. **fips202 `malloc` 제거**: ctx 구조체를 포인터(`uint64_t *ctx`)에서 **고정 배열**(`uint64_t ctx[26]`)로 바꿔 21곳의 `malloc/free/exit` 제거. 디바이스 힙 불필요.
+4. **시드 분리(R1)**: `crypto_sign_keypair` 의 `randombytes()` 호출만 떼어내고, **32바이트 시드를 커널 인자로** 받도록 `keygen.cu` 로 재구성. 나머지 로직은 원본과 동일.
+
+`randombytes.c` 는 OS 난수(디바이스 불가)라 GPU 포트에 포함하지 않았습니다(시드는 호스트가 공급).
+
+---
+
+## 빌드 & 실행
+
+### 1) GPU 포트 (cuda/)
+```bash
+cd cuda
+make ARCH=-arch=sm_86      # 본인 GPU 아키텍처로 조정 (sm_80/86/89/90 등)
+./mldsa87_keygen_cuda      # pk/sk 16진수를 stdout 으로 출력
+```
+- **`-rdc=true` 필수** (Makefile에 포함): 여러 `.cu` 에 흩어진 `__device__` 함수를 서로 호출하므로 relocatable device code가 필요합니다.
+
+### 2) CPU 참조 (ref/)
+```bash
+cd ref
+make
+./mldsa87_keygen_ref       # 동일 형식으로 pk/sk 출력
+```
+
+### 3) 검증 (바이트 일치)
+두 실행의 **stdout(pk/sk 16진수)** 을 비교합니다. 진단 메시지는 stderr 로 빠지므로 diff 에 섞이지 않습니다.
+```bash
+diff <(./ref/mldsa87_keygen_ref 2>/dev/null) <(./cuda/mldsa87_keygen_cuda 2>/dev/null) \
+  && echo "일치: GPU KeyGen 정확성 OK"
+```
+빠른 눈대중 확인: 고정 시드 `00 01 02 … 1f` 에서 **pk 첫 줄(rho, 32B)** 은
+```
+9792bcec2f2430686a82fccf3c2f5ff665e771d7ab41b90258cfa7e90ec97124
+```
+(전체 기대값은 `EXPECTED.txt`)
+
+---
+
+## 단계별 벤치마크 (bench/)
+
+`crypto_sign_keypair` 안의 각 연산 함수 호출을 타이머로 감싸 **단계별 소요시간**을 잽니다.
+비교 단위는 **µs 로 통일**하되, 도달 방법이 장치별로 다릅니다.
+
+- **CPU** (`bench/keypair_bench.c`): `clock_gettime(CLOCK_MONOTONIC)` 로 µs **직접** 측정. 원본 로직 그대로 복제하고 타이머만 추가. 워밍업 후 1000회 반복 → 단계별 **mean/median/min(µs)**.
+- **GPU** (`bench/keygen_bench.cu`): 커널 내부 `clock64()` 로 단계별 **사이클** 측정. 100회 반복 → 단계별 사이클 **중앙값**을, 사용자가 준 GPU 클럭(MHz)으로 나눠 **µs 환산**. 출력에 **사이클과 µs 를 함께** 표기.
+
+측정 단계(원본 호출 순서): seed_expand · ExpandA · ExpandS(s1) · ExpandS(s2) · NTT(s1) · matvec · reduce · invNTT · add · caddq · power2round · pack_pk · H(pk) · pack_sk.
+
+```bash
+cd bench
+make cpu                       # CPU 계측판
+./keypair_bench                # 단계별 µs (mean/median/min)
+
+make gpu ARCH=-arch=sm_86      # GPU 계측판 (본인 아키텍처로)
+./keygen_bench 1410            # 인자 = GPU SM 클럭(MHz). nvidia-smi 로 실제값 확인해 입력
+```
+
+> 참고: GPU µs 는 `clock64()` 사이클 ÷ 지정 클럭입니다. 부스트/스로틀로 실제 클럭이 변하면 오차가 생기므로, 사이클 원본도 함께 출력합니다(필요 시 정확한 클럭으로 재환산). CPU 는 벽시계를 직접 재므로 환산이 필요 없습니다.
+
+## 한계 · 주의
+
+- **성능**: `<<<1,1>>>` 단일 스레드라 **의도적으로 느립니다**(병렬성 0). 이 단계는 정확성 발판이며, 병렬화(HASH·NTT)는 다음 단계입니다.
+- **sign/verify 미포함**: 이번 범위는 KeyGen. `sign()`/`verify()` 는 동일한 시드/난수 분리 리팩터가 필요해 이 베이스라인에는 넣지 않았습니다.
+- **로컬 메모리**: 커널이 `polyvecl mat[K]` 등 큰 지역 배열(합 ~90KB/스레드)을 써서 로컬 메모리를 많이 씁니다. 실행 실패 시 스택 한도 상향(`cudaDeviceSetLimit(cudaLimitStackSize, ...)`)이 필요할 수 있습니다.
+- **보안**: `ref/randombytes.c` 와 `cuda/main.cu` 의 시드는 **검증용 고정값**입니다. 실제 키 생성에 절대 쓰지 마세요.
+- **첫 컴파일 수정 가능성**: `.cu` 는 C++(nvcc)로 컴파일되어, C에선 통과하던 일부 패턴(`void*` 암묵 변환 등)이 걸릴 수 있습니다. 처음 빌드 시 나오는 오류를 따라 수정하세요.
